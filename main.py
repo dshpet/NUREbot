@@ -1,4 +1,4 @@
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import *
 import chatterbot
 import logging
 
@@ -14,8 +14,8 @@ def hello(bot, update):
         'Hello {}'.format(update.message.from_user.first_name)
     )
 
-def function():
-    passdef
+def message_handler(bot, update):
+    bot.sendMessage(chat_id=update.message.chat_id, text=chat_bot.get_response(update.message.text).text)
 
 chat_bot = chatterbot.ChatBot(
       "NUREbot", 
@@ -31,6 +31,7 @@ chat_bot.train("chatterbot.corpus.english")
 
 updater = Updater('259933822:AAGoMk2Fb2YwBP6bOMl69a4E7DDmXBrxtz4')
 
+updater.dispatcher.add_handler(MessageHandler([Filters.text], message_handler))
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('hello', hello))
 
