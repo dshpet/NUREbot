@@ -53,6 +53,8 @@ def message_handler(bot, update):
     bot.sendMessage(chat_id=update.message.chat_id, text=process_text(update.message.text))
 
 
+# api spec 
+# https://docs.google.com/document/d/1BPZkBa5Y_gcGj25Q3eVm7Ftxh0_NG4a1DYhKR-jjfNQ/edit
 cist_api_root = "http://cist.nure.ua/ias/app/tt"
 faculties_url =  urllib.request.urlopen(cist_api_root + "/get_faculties").read()
 faculties = json.loads(faculties_url.decode('UTF-8'))
