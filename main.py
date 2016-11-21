@@ -4,6 +4,7 @@ import logging
 import re
 import json
 import urllib
+import datetime
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
@@ -59,14 +60,50 @@ cist_api_root = "http://cist.nure.ua/ias/app/tt"
 faculties_url =  urllib.request.urlopen(cist_api_root + "/get_faculties").read()
 faculties = json.loads(faculties_url.decode('UTF-8'))
 
-groups_url = cist_api_root + "/get_groups?faculty_id=95" # 95 = CS fac
-groups_json = urllib.request.urlopen(groups_url).read().decode('UTF-8')
-groups = json.loads(groups_json)
+# find all groups to search schedule by a short groupname
+all_groups = []
+for f_entry in faculties['faculties']:
+  faculty_id = f_entry['faculty_id']
+  groups_url = cist_api_root + "/get_groups?faculty_id=" + str(faculty_id) # 95 = CS fac
+  groups_json = urllib.request.urlopen(groups_url).read().decode('UTF-8')
+  groups = json.loads(groups_json)
+  all_groups = all_groups + groups['groups']
 
-group_url = cist_api_root + "/get_schedule?group_id=5742300" # 5742300 PZSm-16-1
+group_id = None
+search_group = "ПЗСм-16-1" # TODO
+for g_entry in all_groups:
+  if g_entry['group_name'] == search_group:
+     group_id = g_entry['group_id']
+   
+assert(group_id != None)
+
+group_url = cist_api_root + "/get_schedule?group_id=" + str(group_id) # 5742300 PZSm-16-1
 group_json = urllib.request.urlopen(group_url).read().decode('UTF-8')
 group_sched = json.loads(group_json)
+today = datetime.datetime.now()
+weekday = datetime.datetime.today().weekday() # Returns the day of the week as an integer, where Monday is 0 and Sunday is 6.
+day_sched = group_sched['days'][weekday]
+lessons = day_sched['lessons']
+today_lessons = []
+for l in lessons:
+  dates = None
+  if 'date_start' in l:
+    dates = [l['date_start']]
+  elif 'dates' in l:
+    dates = l['dates']
+  
+  assert(dates != None)
 
+  s = str(today.day) + "." + str(today.month) + "." + str(today.year) # or user can specify date in dd.mm.year
+  for date in dates:
+    if (date == s):
+      today_lessons.append(l)
+
+for lesson in today_lessons:
+  lesson_info = lesson['subject'] + " [" + lesson['time_start'] + " - " + lesson['time_end'] + "] " + " aud: " + str(lesson['auditories'][0]['auditory_name'])
+  print(lesson_info.encode("utf-8"))
+
+# {'auditories': [{...}], 'date_end': '03.10.2016', 'date_start': '03.10.2016', 'subject': 'Економіка програмно...езпечення', 'teachers': [{...}], 'time_end': '11:05', 'time_start': '09:30', 'type': 0}
 chat_bot = chatterbot.ChatBot("NUREbot", 
       storage_adapter = "chatterbot.adapters.storage.JsonFileStorageAdapter",
       logic_adapters = ["chatterbot.adapters.logic.MathematicalEvaluation",
