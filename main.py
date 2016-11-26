@@ -117,6 +117,11 @@ def message_handler(bot, update):
 
 get_schedule("ПЗСм-16-1")
 
+# look for data
+# http://www.nltk.org/data.html
+# delete if it sucks
+# C:\Users\dshpet\AppData\Roaming\nltk_data
+
 chat_bot = chatterbot.ChatBot("NUREbot", 
       storage_adapter = "chatterbot.adapters.storage.JsonFileStorageAdapter",
       logic_adapters = ["chatterbot.adapters.logic.MathematicalEvaluation",
