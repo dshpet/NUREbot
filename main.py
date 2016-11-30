@@ -115,20 +115,49 @@ def message_handler(bot, update):
     bot.sendMessage(chat_id=update.message.chat_id, text=process_text(update.message.text))
 
 
-get_schedule("ПЗСм-16-1")
+#get_schedule("ПЗСм-16-1")
 
 # look for data
 # http://www.nltk.org/data.html
 # delete if it sucks
 # C:\Users\dshpet\AppData\Roaming\nltk_data
+import nltk
+# read
+# http://www.nltk.org/api/nltk.chat.html
+# chatbots _pairs may be useful for some text data, but input is a re pattern which is not compatible
+# with current chatterbot
+# https://www.smallsurething.com/implementing-the-famous-eliza-chatbot-in-python/
+a = nltk.chat
+b = a.iesha.iesha_chatbot._pairs
+for req, res in b:
+  c = re.compile(req)
+  print(c.pattern, res)
 
 chat_bot = chatterbot.ChatBot("NUREbot", 
       storage_adapter = "chatterbot.adapters.storage.JsonFileStorageAdapter",
       logic_adapters = ["chatterbot.adapters.logic.MathematicalEvaluation",
         "chatterbot.adapters.logic.TimeLogicAdapter",
         "chatterbot.adapters.logic.ClosestMatchAdapter",])
-chat_bot.set_trainer(chatterbot.trainers.ChatterBotCorpusTrainer)
-chat_bot.train("chatterbot.corpus.english")
+#chat_bot.set_trainer(chatterbot.trainers.ChatterBotCorpusTrainer)
+#chat_bot.train("chatterbot.corpus.english")
+chat_bot.set_trainer(chatterbot.trainers.ListTrainer)
+# maybe faster is just to train for my functions + additional later
+chat_bot.train([
+  "аудитория",
+  "Используй команду _аудитория_",
+  "ауд",
+  "Используй команду _аудитория_",
+  "где аудитория?",
+  "Чтобы узнать спроси через команду _аудитория_",
+  "как пройти в аудиторию?",
+  "Чтобы узнать спроси через команду _аудитория_",
+  "на каком этаже аудитория?",
+  "Чтобы узнать спроси через команду _аудитория_",
+  "в каком корпусе аудитория?",
+  "Чтобы узнать спроси через команду _аудитория_",
+  "где находится аудитория",
+  "Чтобы узнать спроси через команду _аудитория_",
+])
 
 updater = Updater('259933822:AAGoMk2Fb2YwBP6bOMl69a4E7DDmXBrxtz4')
 
