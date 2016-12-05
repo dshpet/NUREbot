@@ -10,19 +10,10 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 chat_bot = None
 
-def start(bot, update):
-    update.message.reply_text('Bot is now in English. A multi-language too')
-
-def hello(bot, update):
-    update.message.reply_text('Hello {}'.format(update.message.from_user.first_name))
-
 def process_text(text): # todo rename and debidlo
-    aud_msg = parse_auditory_number(text)
-
-    url =  urllib.request.urlopen("http://cist.nure.ua/ias/app/tt/").read()
-    cist_schedule = json.loads(url)
-
-    return aud_msg
+    bot_response = chat_bot.generate_response(text)
+      
+    return bot_response
 
 def get_schedule(group, date = None):
   # api spec 
@@ -107,8 +98,13 @@ def parse_auditory_number(text):
         
         return answer
 
-def auditory(bot, update):
-    update.message.reply_text("DSOKDOSK")
+# args should contain the actual number
+def auditory(bot, update, args):
+    if len(args) != 1:
+      update.message.reply_text("Example usage: /aud 42з")
+    else:
+      path_message = parse_auditory_number(args[0])
+      update.message.reply_text("Она находится : " + path_message)
 
 def message_handler(bot, update):
     bot.sendMessage(chat_id=update.message.chat_id, text=chat_bot.get_response(update.message.text).text)
@@ -144,27 +140,40 @@ chat_bot.set_trainer(chatterbot.trainers.ListTrainer)
 # maybe faster is just to train for my functions + additional later
 chat_bot.train([
   "аудитория",
-  "Используй команду _аудитория_",
+  "Используй команду /aud number",
   "ауд",
-  "Используй команду _аудитория_",
+  "Используй команду /aud number",
   "где аудитория?",
-  "Чтобы узнать спроси через команду _аудитория_",
+  "Чтобы узнать спроси через команду /aud number",
   "как пройти в аудиторию?",
-  "Чтобы узнать спроси через команду _аудитория_",
+  "Чтобы узнать спроси через команду /aud number",
   "на каком этаже аудитория?",
-  "Чтобы узнать спроси через команду _аудитория_",
+  "Чтобы узнать спроси через команду /aud number",
   "в каком корпусе аудитория?",
-  "Чтобы узнать спроси через команду _аудитория_",
+  "Чтобы узнать спроси через команду /aud number",
   "где находится аудитория",
-  "Чтобы узнать спроси через команду _аудитория_",
+  "Чтобы узнать спроси через команду /aud number",
+
+
+  "где столовая?",
+  "В главном корпусе : \n" +
+    "\n\t на первом этаже нет столовых. Можно найти кофейный аппарат, если сразу после главного входа идти налево" +
+    
+    "\n\t на втором этаже, если подниматься по главной лестнице, то сразу справа столовая, в которой можно плотно поесть" +
+    "\n\t на втором этаже, если подниматься по главной лестнице, то сразу слева небольшая закусочная" +
+    "\n\t на втором этаже сразу можно заметить зону отдыха и кофейную точку. Работает с 9:00 до 17:30" +
+
+    "\n\t на третьем этаже нет столовых." +
+  
+    "\n\t на четвертом этаже нет столовых" +
+    
+    "\n\t на пятом этаже нет столовых"
 ])
 
 updater = Updater('259933822:AAGoMk2Fb2YwBP6bOMl69a4E7DDmXBrxtz4')
 
 updater.dispatcher.add_handler(MessageHandler([Filters.text], message_handler))
-updater.dispatcher.add_handler(CommandHandler('start', start))
-updater.dispatcher.add_handler(CommandHandler('hello', hello))
-updater.dispatcher.add_handler(CommandHandler('auditory', auditory))
+updater.dispatcher.add_handler(CommandHandler(command = 'aud', callback = auditory, pass_args = True))
 
 updater.start_polling()
 updater.idle()
