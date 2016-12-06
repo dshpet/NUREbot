@@ -135,52 +135,30 @@ for req, res in b:
 chat_bot = chatterbot.ChatBot("NUREbot", 
       storage_adapter = "chatterbot.storage.JsonFileStorageAdapter",
       logic_adapters = [
-        "chatterbot.logic.MathematicalEvaluation",
-        "chatterbot.logic.TimeLogicAdapter",
-        "chatterbot.logic.ClosestMatchAdapter",
+        {
+            'import_path': 'chatterbot.logic.ClosestMatchAdapter'
+        },
+        {
+            'import_path': 'chatterbot.logic.LowConfidenceAdapter',
+            'threshold': 0.65,
+            'default_response': 'Я не понимаю, надо перефразировать.'
+        },
+        {
+            'import_path': 'chatterbot.logic.MathematicalEvaluation'
+        },
+        {
+            'import_path': 'chatterbot.logic.TimeLogicAdapter'
+        },
+        {
+            'import_path': 'chatterbot.logic.TimeLogicAdapter'
+        }
       ]
 )
 chat_bot.set_trainer(chatterbot.trainers.ChatterBotCorpusTrainer)
 #chat_bot.train("chatterbot.corpus.english")
-chat_bot.train("chatterbot.corpus.russian")
+chat_bot.train("chatterbot.corpus.nure")
 chat_bot.set_trainer(chatterbot.trainers.ListTrainer)
 # maybe faster is just to train for my functions + additional later
-training_info = [
-  "аудитория",
-  "Используй команду /aud number",
-  "ауд",
-  "Используй команду /aud number",
-  "где аудитория?",
-  "Чтобы узнать спроси через команду /aud number",
-  "как пройти в аудиторию?",
-  "Чтобы узнать спроси через команду /aud number",
-  "на каком этаже аудитория?",
-  "Чтобы узнать спроси через команду /aud number",
-  "в каком корпусе аудитория?",
-  "Чтобы узнать спроси через команду /aud number",
-  "где находится аудитория",
-  "Чтобы узнать спроси через команду /aud number",
-
-
-  "где столовая?",
-  "В главном корпусе : \n" +
-    "\n\t на первом этаже нет столовых. Можно найти кофейный аппарат, если сразу после главного входа идти налево" +
-    
-    "\n\t на втором этаже, если подниматься по главной лестнице, то сразу справа столовая, в которой можно плотно поесть" +
-    "\n\t на втором этаже, если подниматься по главной лестнице, то сразу слева небольшая закусочная" +
-    "\n\t на втором этаже сразу можно заметить зону отдыха и кофейную точку. Работает с 9:00 до 17:30" +
-
-    "\n\t на третьем этаже нет столовых." +
-  
-    "\n\t на четвертом этаже нет столовых" +
-    
-    "\n\t на пятом этаже нет столовых"
-]
-#for i in range(0, len(training_info)):
-#  s = training_info[i]
-#  training_info[i] = s.encode('utf-8')
-
-#chat_bot.train(training_info)
 
 updater = Updater('259933822:AAGoMk2Fb2YwBP6bOMl69a4E7DDmXBrxtz4')
 
