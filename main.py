@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from telegram.ext import *
 import chatterbot
 import logging
@@ -130,15 +133,19 @@ for req, res in b:
   print(c.pattern, res)
 
 chat_bot = chatterbot.ChatBot("NUREbot", 
-      storage_adapter = "chatterbot.adapters.storage.JsonFileStorageAdapter",
-      logic_adapters = ["chatterbot.adapters.logic.MathematicalEvaluation",
-        "chatterbot.adapters.logic.TimeLogicAdapter",
-        "chatterbot.adapters.logic.ClosestMatchAdapter",])
-#chat_bot.set_trainer(chatterbot.trainers.ChatterBotCorpusTrainer)
+      storage_adapter = "chatterbot.storage.JsonFileStorageAdapter",
+      logic_adapters = [
+        "chatterbot.logic.MathematicalEvaluation",
+        "chatterbot.logic.TimeLogicAdapter",
+        "chatterbot.logic.ClosestMatchAdapter",
+      ]
+)
+chat_bot.set_trainer(chatterbot.trainers.ChatterBotCorpusTrainer)
 #chat_bot.train("chatterbot.corpus.english")
+chat_bot.train("chatterbot.corpus.russian")
 chat_bot.set_trainer(chatterbot.trainers.ListTrainer)
 # maybe faster is just to train for my functions + additional later
-chat_bot.train([
+training_info = [
   "аудитория",
   "Используй команду /aud number",
   "ауд",
@@ -168,7 +175,12 @@ chat_bot.train([
     "\n\t на четвертом этаже нет столовых" +
     
     "\n\t на пятом этаже нет столовых"
-])
+]
+#for i in range(0, len(training_info)):
+#  s = training_info[i]
+#  training_info[i] = s.encode('utf-8')
+
+#chat_bot.train(training_info)
 
 updater = Updater('259933822:AAGoMk2Fb2YwBP6bOMl69a4E7DDmXBrxtz4')
 
