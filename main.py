@@ -165,7 +165,7 @@ chat_bot = chatterbot.ChatBot("NUREbot",
         },
         {
             'import_path': 'chatterbot.logic.LowConfidenceAdapter',
-            'threshold': 0.65,
+            'threshold': 0.45,
             'default_response': 'Я не понимаю, надо перефразировать.'
         },
         {
