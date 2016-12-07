@@ -12,7 +12,7 @@ import datetime
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 chat_bot = None
-is_learning_enabled = False # todo move to config
+is_learning_enabled = True # todo move learning to separate instance
 
 def process_text(text): # todo rename and debidlo
  
@@ -181,7 +181,7 @@ if is_learning_enabled:
   chat_bot.set_trainer(chatterbot.trainers.ChatterBotCorpusTrainer)
   #chat_bot.train("chatterbot.corpus.english")
   #chat_bot.train("chatterbot.corpus.russian")
-  chat_bot.train("chatterbot.corpus.nure") # todo use local path
+  chat_bot.train("corpus.nure") # todo use local path
 
 updater = Updater('259933822:AAGoMk2Fb2YwBP6bOMl69a4E7DDmXBrxtz4')
 
