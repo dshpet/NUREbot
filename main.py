@@ -12,13 +12,18 @@ import datetime
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 chat_bot = None
+is_learning_enabled = False # todo move to config
 
 def process_text(text): # todo rename and debidlo
-    bot_response = chat_bot.generate_response(text)
+ 
+    bot_response = chat_bot.get_response(text)
       
     return bot_response
 
 def get_schedule(group, date = None):
+  # caption independent search
+  group = group.lower()
+
   # api spec 
   # https://docs.google.com/document/d/1BPZkBa5Y_gcGj25Q3eVm7Ftxh0_NG4a1DYhKR-jjfNQ/edit
   cist_api_root = "http://cist.nure.ua/ias/app/tt"
@@ -39,8 +44,9 @@ def get_schedule(group, date = None):
   group_id = None
   search_group = group
   for g_entry in all_groups:
-    if g_entry['group_name'] == search_group:
+    if g_entry['group_name'].lower() == search_group:
        group_id = g_entry['group_id']
+       break
      
   assert(group_id != None)
   
@@ -51,7 +57,10 @@ def get_schedule(group, date = None):
   try:
     schedule_date = datetime.datetime.strptime(date, "%d.%m.%Y") if date != None else datetime.datetime.today()
   except ValueError:
-    return "FCUKYOU!!1 khm.. Try to input a valid dd.mm.YYYY date representation"
+    return "Input a valid dd.mm.YYYY date representation as the second argument"
+
+  # double conversion to ensure valid string date format
+  schedule_date_ddmmyear = schedule_date.strftime("%d.%m.%Y")
 
   weekday = schedule_date.weekday() # Returns the day of the week as an integer, where Monday is 0 and Sunday is 6.
   day_sched = group_sched['days'][weekday]
@@ -66,15 +75,13 @@ def get_schedule(group, date = None):
     
     assert(dates != None)
   
-    schedule_date_ddmmyear = str(schedule_date.day) + "." + str(schedule_date.month) + "." + str(schedule_date.year) # date in dd.mm.year foramt as in api
-
     for lesson_date in dates:
       if (lesson_date == schedule_date_ddmmyear):
         today_lessons.append(l)
   
   schedule_info = ""
   for lesson in today_lessons:
-    lesson_info = lesson['subject'] + " [" + lesson['time_start'] + " - " + lesson['time_end'] + "] " + " aud: " + str(lesson['auditories'][0]['auditory_name']) + "\r\n"
+    lesson_info = lesson['subject'] +  "\r\n" + " [" + lesson['time_start'] + " - " + lesson['time_end'] + "] " + "\r\n" + " aud: " + str(lesson['auditories'][0]['auditory_name']) + "\r\n" + "\r\n"
     schedule_info += lesson_info
 
   return schedule_info
@@ -109,9 +116,27 @@ def auditory(bot, update, args):
       path_message = parse_auditory_number(args[0])
       update.message.reply_text("Она находится : " + path_message)
 
+def schedule(bot, update, args):
+    argc = len(args)
+    schedule_message = None
+
+    # bad construction, redo in a conviniet way
+    if argc == 0:
+      update.message.reply_text("Example usage: /sched ПЗСм-16-1 [28.12.2016]" + "\n [date] is optional. Not specified = today")
+      return
+    elif argc == 1:
+      schedule_message = get_schedule(args[0])
+    elif argc == 2:
+      schedule_message = get_schedule(args[0], args[1])
+
+    update.message.reply_text(schedule_message)
+
 def message_handler(bot, update):
-    bot.sendMessage(chat_id=update.message.chat_id, text=chat_bot.get_response(update.message.text).text)
-    bot.sendMessage(chat_id=update.message.chat_id, text=process_text(update.message.text))
+    resp = process_text(update.message.text).text
+    bot.sendMessage(
+      chat_id=update.message.chat_id, 
+      text=resp
+    )
 
 
 #get_schedule("ПЗСм-16-1")
@@ -126,17 +151,17 @@ import nltk
 # chatbots _pairs may be useful for some text data, but input is a re pattern which is not compatible
 # with current chatterbot
 # https://www.smallsurething.com/implementing-the-famous-eliza-chatbot-in-python/
-a = nltk.chat
-b = a.iesha.iesha_chatbot._pairs
-for req, res in b:
-  c = re.compile(req)
-  print(c.pattern, res)
+# a = nltk.chat
+# b = a.iesha.iesha_chatbot._pairs
+# for req, res in b:
+#   c = re.compile(req)
+#   print(c.pattern, res)
 
 chat_bot = chatterbot.ChatBot("NUREbot", 
       storage_adapter = "chatterbot.storage.JsonFileStorageAdapter",
       logic_adapters = [
         {
-            'import_path': 'chatterbot.logic.ClosestMatchAdapter'
+            'import_path': 'chatterbot.logic.BestMatch'
         },
         {
             'import_path': 'chatterbot.logic.LowConfidenceAdapter',
@@ -148,22 +173,21 @@ chat_bot = chatterbot.ChatBot("NUREbot",
         },
         {
             'import_path': 'chatterbot.logic.TimeLogicAdapter'
-        },
-        {
-            'import_path': 'chatterbot.logic.TimeLogicAdapter'
         }
       ]
 )
-chat_bot.set_trainer(chatterbot.trainers.ChatterBotCorpusTrainer)
-#chat_bot.train("chatterbot.corpus.english")
-chat_bot.train("chatterbot.corpus.nure")
-chat_bot.set_trainer(chatterbot.trainers.ListTrainer)
-# maybe faster is just to train for my functions + additional later
+
+if is_learning_enabled:
+  chat_bot.set_trainer(chatterbot.trainers.ChatterBotCorpusTrainer)
+  #chat_bot.train("chatterbot.corpus.english")
+  #chat_bot.train("chatterbot.corpus.russian")
+  chat_bot.train("chatterbot.corpus.nure") # todo use local path
 
 updater = Updater('259933822:AAGoMk2Fb2YwBP6bOMl69a4E7DDmXBrxtz4')
 
 updater.dispatcher.add_handler(MessageHandler([Filters.text], message_handler))
 updater.dispatcher.add_handler(CommandHandler(command = 'aud', callback = auditory, pass_args = True))
+updater.dispatcher.add_handler(CommandHandler(command = 'schedule', callback = schedule, pass_args = True))
 
 updater.start_polling()
 updater.idle()
