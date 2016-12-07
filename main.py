@@ -181,8 +181,20 @@ if is_learning_enabled:
   chat_bot.set_trainer(chatterbot.trainers.ChatterBotCorpusTrainer)
   #chat_bot.train("chatterbot.corpus.english")
   #chat_bot.train("chatterbot.corpus.russian")
-  chat_bot.train("corpus.nure")
+  #chat_bot.train("chatterbot.corpus.chinese")
+  #chat_bot.train("chatterbot.corpus.french")
+  #chat_bot.train("chatterbot.corpus.german")
+  #chat_bot.train("chatterbot.corpus.hindi")
+  #chat_bot.train("chatterbot.corpus.indonesia")
+  #chat_bot.train("chatterbot.corpus.italian")
+  #chat_bot.train("chatterbot.corpus.marathi")
+  #chat_bot.train("chatterbot.corpus.portuguese")
+  #chat_bot.train("chatterbot.corpus.spanish")
+  #chat_bot.train("chatterbot.corpus.telugu")
+  
+  #chat_bot.train("corpus.nure")
 
+# please do not steal my key and/or use it to do bad stuff. Thanks
 updater = Updater('259933822:AAGoMk2Fb2YwBP6bOMl69a4E7DDmXBrxtz4')
 
 updater.dispatcher.add_handler(MessageHandler([Filters.text], message_handler))
