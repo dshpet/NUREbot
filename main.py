@@ -14,13 +14,32 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 chat_bot = None
 is_learning_enabled = True # todo move learning to separate instance
 
-def process_text(text): # todo rename and debidlo
- 
-    bot_response = chat_bot.get_response(text)
-      
-    return bot_response
+def process_text(text: str) -> str:
+  """
+  Proxy regular text to the current bot model
+  Parametrs:
+    text - string, user input
 
-def get_schedule(group, date = None):
+  Returns:
+    string, bot calculated response
+  """
+  bot_response = chat_bot.get_response(text)
+    
+  return bot_response
+
+def get_schedule(group: str, date: str = None) -> str:
+  """
+  Get schedule for a group by its name for one full day.
+  Schedule source - NURE official api (http://cist.nure.ua/ias/app/tt)
+  Date is optional. No date specified = today
+
+  Parametrs:
+    group - string, group title
+    date  - string, optional. Date format should be zero-padded and dot delimited "dd.mm.YYYY" ("01.12.2016")
+
+  Returns:
+    string, formatted schedule info
+  """
   # caption independent search
   group = group.lower()
 
@@ -86,30 +105,49 @@ def get_schedule(group, date = None):
 
   return schedule_info
 
+# TODO get more info about placings
 def parse_auditory_number(text):
-    numbers = re.findall(r'\b\d+[а-я]?\b', text)
-    
-    if not numbers:
-      return ""
+  """
+  Get directions to auditorium including building, floor.
 
-    for number in numbers:
-        answer = ""
-        if (not number[len(number) - 1].isdigit()):
-            if (number[len(number) - 1] == 'и'):
-              answer += "Корпус И "
-            elif (number[len(number) - 1] == 'з'):
-              answer += "Корпус З "
-            else:
-              answer += "Главный корпус "  
-        else:
-            answer += "Главный корпус "
-        
-        answer += "Этаж " + number[0]
-        
-        return answer
+  Parametrs:
+    text - string, number as represented in schedule ("42з")
+
+  Returns:
+    string, formatted directions info
+  """
+
+  numbers = re.findall(r'\b\d+[а-я]?\b', text)
+  
+  if not numbers:
+    return ""
+
+  for number in numbers:
+      answer = ""
+      if (not number[len(number) - 1].isdigit()):
+          if (number[len(number) - 1] == 'и'):
+            answer += "Корпус И "
+          elif (number[len(number) - 1] == 'з'):
+            answer += "Корпус З "
+          else:
+            answer += "Главный корпус "  
+      else:
+          answer += "Главный корпус "
+      
+      answer += "Этаж " + number[0]
+      
+      return answer
 
 # args should contain the actual number
 def auditory(bot, update, args):
+    """
+    Bot proxy method to send auditorium directions in text fromat to user.
+
+    Parametrs:
+    bot    - telegram.ext bot object
+    update - telegram.ext update object
+    args   - list of string parametres passed through command (/aud 42з -> args = ['42з']
+    """
     if len(args) != 1:
       update.message.reply_text("Example usage: /aud 42з")
     else:
@@ -117,6 +155,14 @@ def auditory(bot, update, args):
       update.message.reply_text("Она находится : " + path_message)
 
 def schedule(bot, update, args):
+    """
+    Bot proxy method to send schedule info in text fromat to user.
+
+    Parametrs:
+    bot    - telegram.ext bot object
+    update - telegram.ext update object
+    args   - list of string parametres passed through command (/schedule ПЗСм-16-1 26.12.2016 -> args = ['42з', '26.12.2016']
+    """
     argc = len(args)
     schedule_message = None
 
@@ -137,9 +183,6 @@ def message_handler(bot, update):
       chat_id=update.message.chat_id, 
       text=resp
     )
-
-
-#get_schedule("ПЗСм-16-1")
 
 # look for data
 # http://www.nltk.org/data.html
