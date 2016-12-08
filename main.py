@@ -10,7 +10,17 @@ import json
 import urllib
 import datetime
 
+from Crypto.Cipher import AES
+import base64
+
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+
+# store encrypted keys to avoid simple github search for tokens
+crypter = AES.new('76B305DACD6BE18BBF07F1DFB0C57E65', AES.MODE_ECB)
+TELEGRAM_ACCESS_TOKEN_ENCRYPTED = b'\x1ed4\x85\xfcf\x03\xfc=\xd6\xcc\xdb\x06h\xe6\xed\x98=+4d\x9a\xb7\x87\xd2\xcb\xc4\xe7\xb4\xe6^\x98)\x0b1\xce\xb4\x9ai\x96r*\x10\xfe\xafe\x96\x1d'
+MONGO_URI_STRING_ENCRYPTED = b'\xcb\x8d\x90\xb9\x1c\x81\x82\x18\xd5\xfaf@\xea"ePv\x07\xed\xc2\xc9\xcd7\xf8\x8b\x02\x9a\xed\xce\xc9\xc1C\x1fA\x19\x1d\xe6Q9\t9\xec\xb7\x17]}\xca^\x18lzC\xa3\xd0\xee\x1f\xe8o5#\xe9\xea\xaaa'
+TELEGRAM_ACCESS_TOKEN = str(crypter.decrypt(TELEGRAM_ACCESS_TOKEN_ENCRYPTED).strip())[2:-1] # crop unnecessary braces and stuff 
+MONGO_URI_STRING = str(crypter.decrypt(MONGO_URI_STRING_ENCRYPTED).strip())[2:-1] # crop unnecessary braces and stuff 
 
 chat_bot = None
 is_learning_enabled = False # todo move learning to separate instance
@@ -244,7 +254,9 @@ import nltk
 #   print(c.pattern, res)
 
 chat_bot = chatterbot.ChatBot("NUREbot", 
-      storage_adapter = "chatterbot.storage.JsonFileStorageAdapter", # TODO Use database!!!
+      storage_adapter = "chatterbot.storage.MongoDatabaseAdapter",
+      database = "nure-bot",
+      database_uri = MONGO_URI_STRING,
       logic_adapters = [
         {
             'import_path': 'chatterbot.logic.ClosestMeaningAdapter'
@@ -265,30 +277,28 @@ chat_bot = chatterbot.ChatBot("NUREbot",
 
 if is_learning_enabled:
   chat_bot.set_trainer(chatterbot.trainers.ChatterBotCorpusTrainer)
-  #chat_bot.train("chatterbot.corpus.english")
-  #chat_bot.train("chatterbot.corpus.russian")
-  #chat_bot.train("chatterbot.corpus.chinese")
-  #chat_bot.train("chatterbot.corpus.french")
-  #chat_bot.train("chatterbot.corpus.german")
-  #chat_bot.train("chatterbot.corpus.hindi")
-  #chat_bot.train("chatterbot.corpus.indonesia")
-  #chat_bot.train("chatterbot.corpus.italian")
-  #chat_bot.train("chatterbot.corpus.marathi")
-  #chat_bot.train("chatterbot.corpus.portuguese")
-  #chat_bot.train("chatterbot.corpus.spanish")
-  #chat_bot.train("chatterbot.corpus.telugu")
+  chat_bot.train("chatterbot.corpus.english")
+  chat_bot.train("chatterbot.corpus.russian")
+  chat_bot.train("chatterbot.corpus.chinese")
+  chat_bot.train("chatterbot.corpus.french")
+  chat_bot.train("chatterbot.corpus.german")
+  chat_bot.train("chatterbot.corpus.hindi")
+  chat_bot.train("chatterbot.corpus.indonesia")
+  chat_bot.train("chatterbot.corpus.italian")
+  chat_bot.train("chatterbot.corpus.marathi")
+  chat_bot.train("chatterbot.corpus.portuguese")
+  chat_bot.train("chatterbot.corpus.spanish")
+  chat_bot.train("chatterbot.corpus.telugu")
   
-  #chat_bot.train("corpus.nure")
+  chat_bot.train("corpus.nure")
 
-# please do not steal my key and/or use it to do bad stuff. Thanks
-updater = Updater('259933822:AAGoMk2Fb2YwBP6bOMl69a4E7DDmXBrxtz4')
+updater = Updater(TELEGRAM_ACCESS_TOKEN)
 
 updater.dispatcher.add_handler(MessageHandler([Filters.text], message_handler))
 updater.dispatcher.add_handler(CommandHandler(command = 'aud', callback = auditory, pass_args = True))
 updater.dispatcher.add_handler(CommandHandler(command = 'schedule', callback = schedule, pass_args = True))
-
-# updater.dispatcher.add_handler(CommandHandler(command = 'start', callback = help))
-# updater.dispatcher.add_handler(CommandHandler(command = 'help', callback = help))
+updater.dispatcher.add_handler(CommandHandler(command = 'start', callback = help))
+updater.dispatcher.add_handler(CommandHandler(command = 'help', callback = help))
 
 updater.start_polling()
 updater.idle()
