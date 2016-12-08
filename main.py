@@ -78,7 +78,8 @@ def get_schedule(group: str, date: str = None) -> str:
        group_id = g_entry['group_id']
        break
      
-  assert(group_id != None)
+  if group_id == None:
+    return "Group not found"
   
   group_url = cist_api_root + "/get_schedule?group_id=" + str(group_id)
   group_json = urllib.request.urlopen(group_url).read().decode('UTF-8')
@@ -232,7 +233,7 @@ def help(bot, update):
     "Я нурешный бот. Могу рассказать про расположение аудиторий, столовых, туалетов. "
     "Расписание на один день на группу. Можем просто поговорить на какие-то темы. \n"
     "Сейчас я понимаю русский, english и немного других языков. \n"
-    "Мои команды с примером использования: \aud 322и , \sched ПЗСм-16-1 07.12.2016 , \sched ПЗСм-16-1 \n"
+    "Мои команды с примером использования: /aud 322и , /sched ПЗСм-16-1 07.12.2016 , /sched ПЗСм-16-1 \n"
     "Все ли понятно?",
     reply_markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
   )
@@ -259,7 +260,7 @@ chat_bot = chatterbot.ChatBot("NUREbot",
       database_uri = MONGO_URI_STRING,
       logic_adapters = [
         {
-            'import_path': 'chatterbot.logic.ClosestMeaningAdapter'
+            'import_path': 'chatterbot.logic.BestMatch'
         },
         {
             'import_path': 'chatterbot.logic.LowConfidenceAdapter',
@@ -294,7 +295,7 @@ if is_learning_enabled:
 
 updater = Updater(TELEGRAM_ACCESS_TOKEN)
 
-updater.dispatcher.add_handler(MessageHandler([Filters.text], message_handler))
+updater.dispatcher.add_handler(MessageHandler(Filters.text, message_handler))
 updater.dispatcher.add_handler(CommandHandler(command = 'aud', callback = auditory, pass_args = True))
 updater.dispatcher.add_handler(CommandHandler(command = 'schedule', callback = schedule, pass_args = True))
 updater.dispatcher.add_handler(CommandHandler(command = 'start', callback = help))
