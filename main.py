@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from telegram.ext import *
+from telegram import *
 import chatterbot
 import logging
 import re
@@ -12,7 +13,7 @@ import datetime
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 chat_bot = None
-is_learning_enabled = True # todo move learning to separate instance
+is_learning_enabled = False # todo move learning to separate instance
 
 def process_text(text: str) -> str:
   """
@@ -120,69 +121,111 @@ def parse_auditory_number(text):
   numbers = re.findall(r'\b\d+[а-я]?\b', text)
   
   if not numbers:
-    return ""
+    return "Неправильный формат аудитории"
 
+  if text == "спорт":
+    return "Спортзал находится на четвертом этаже. Пройти туда можно зайдя в главный вход университета, повернув налево, пройдя по коридору, затем повернув направо, продя по коридору и поднявшись по лестнице, которая там находится"
+  
+  # should contain only one number in the list for my purpose
+  assert(len(numbers) == 1)
+
+  info = ""
   for number in numbers:
-      answer = ""
-      if (not number[len(number) - 1].isdigit()):
-          if (number[len(number) - 1] == 'и'):
-            answer += "Корпус И "
-          elif (number[len(number) - 1] == 'з'):
-            answer += "Корпус З "
-          else:
-            answer += "Главный корпус "  
-      else:
-          answer += "Главный корпус "
-      
-      answer += "Этаж " + number[0]
-      
-      return answer
+    answer = ""
+    path_info = ""
+    if (not number[len(number) - 1].isdigit()):
+        if (number[len(number) - 1] == 'и'):
+          answer += "Корпус И "
+        elif (number[len(number) - 1] == 'з'):
+          answer += "Корпус З "
+          path_info += "Проще пройти через главный корпус. Главный вход, второй этаж и сразу налево, если идти по главной лестнице. Затем по крытому переходу в корпус З"
+    else:
+        answer += "Главный корпус "
+        aud = int(number[1:len(number)])
+        if aud < 50:
+          path_info += "Слева, если идти по главной лестнице"
+        else:
+          path_info += "Справа, если идти по главной лестнице"
+
+    answer += "Этаж " + number[0] + " \r\n" + path_info
+    
+    info += answer
+    
+  return info
 
 # args should contain the actual number
 def auditory(bot, update, args):
-    """
-    Bot proxy method to send auditorium directions in text fromat to user.
+  """
+  Bot proxy method to send auditorium directions in text fromat to user.
 
-    Parametrs:
-    bot    - telegram.ext bot object
-    update - telegram.ext update object
-    args   - list of string parametres passed through command (/aud 42з -> args = ['42з']
-    """
-    if len(args) != 1:
-      update.message.reply_text("Example usage: /aud 42з")
-    else:
-      path_message = parse_auditory_number(args[0])
-      update.message.reply_text("Она находится : " + path_message)
+  Parametrs:
+  bot    - telegram.ext bot object
+  update - telegram.ext update object
+  args   - list of string parametres passed through command (/aud 42з -> args = ['42з']
+  """
+  if len(args) != 1:
+    update.message.reply_text("Example usage: /aud 42з")
+  else:
+    path_message = parse_auditory_number(args[0])
+    update.message.reply_text("Она находится : " + path_message)
 
 def schedule(bot, update, args):
-    """
-    Bot proxy method to send schedule info in text fromat to user.
+  """
+  Bot proxy method to send schedule info in text fromat to user.
 
-    Parametrs:
-    bot    - telegram.ext bot object
-    update - telegram.ext update object
-    args   - list of string parametres passed through command (/schedule ПЗСм-16-1 26.12.2016 -> args = ['42з', '26.12.2016']
-    """
-    argc = len(args)
-    schedule_message = None
+  Parametrs:
+  bot    - telegram.ext bot object
+  update - telegram.ext update object
+  args   - list of string parametres passed through command (/schedule ПЗСм-16-1 26.12.2016 -> args = ['42з', '26.12.2016']
+  """
+  argc = len(args)
+  schedule_message = None
 
-    # bad construction, redo in a conviniet way
-    if argc == 0:
-      update.message.reply_text("Example usage: /sched ПЗСм-16-1 [28.12.2016]" + "\n [date] is optional. Not specified = today")
-      return
-    elif argc == 1:
-      schedule_message = get_schedule(args[0])
-    elif argc == 2:
-      schedule_message = get_schedule(args[0], args[1])
+  # bad construction, redo in a conviniet way
+  if argc == 0:
+    update.message.reply_text("Example usage: /sched ПЗСм-16-1 [28.12.2016]" + "\n [date] is optional. Not specified = today")
+    return
+  elif argc == 1:
+    schedule_message = get_schedule(args[0])
+  elif argc == 2:
+    schedule_message = get_schedule(args[0], args[1])
 
-    update.message.reply_text(schedule_message)
+  update.message.reply_text(schedule_message)
 
+# TODO maybe get rid of double layer of proxy from chatterbot
 def message_handler(bot, update):
-    resp = process_text(update.message.text).text
-    bot.sendMessage(
-      chat_id=update.message.chat_id, 
-      text=resp
-    )
+  """
+  Bot proxy method to process non-command user text.
+  Uses process_text method
+
+  Parametrs:
+  bot    - telegram.ext bot object
+  update - telegram.ext update object
+  """
+  resp = process_text(update.message.text).text
+  bot.sendMessage(
+    chat_id=update.message.chat_id, 
+    text=resp
+  )
+
+def help(bot, update):
+  """
+  Conversation engager. Acts as basic help about commands and bot capabilities
+
+  Parametrs:
+  bot    - telegram.ext bot object
+  update - telegram.ext update object
+  """
+  reply_keyboard = [['O K']]
+
+  update.message.reply_text(
+    "Я нурешный бот. Могу рассказать про расположение аудиторий, столовых, туалетов. "
+    "Расписание на один день на группу. Можем просто поговорить на какие-то темы. \n"
+    "Сейчас я понимаю русский, english и немного других языков. \n"
+    "Мои команды с примером использования: \aud 322и , \sched ПЗСм-16-1 07.12.2016 , \sched ПЗСм-16-1 \n"
+    "Все ли понятно?",
+    reply_markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+  )
 
 # look for data
 # http://www.nltk.org/data.html
@@ -201,10 +244,10 @@ import nltk
 #   print(c.pattern, res)
 
 chat_bot = chatterbot.ChatBot("NUREbot", 
-      storage_adapter = "chatterbot.storage.JsonFileStorageAdapter",
+      storage_adapter = "chatterbot.storage.JsonFileStorageAdapter", # TODO Use database!!!
       logic_adapters = [
         {
-            'import_path': 'chatterbot.logic.BestMatch'
+            'import_path': 'chatterbot.logic.ClosestMeaningAdapter'
         },
         {
             'import_path': 'chatterbot.logic.LowConfidenceAdapter',
@@ -243,6 +286,9 @@ updater = Updater('259933822:AAGoMk2Fb2YwBP6bOMl69a4E7DDmXBrxtz4')
 updater.dispatcher.add_handler(MessageHandler([Filters.text], message_handler))
 updater.dispatcher.add_handler(CommandHandler(command = 'aud', callback = auditory, pass_args = True))
 updater.dispatcher.add_handler(CommandHandler(command = 'schedule', callback = schedule, pass_args = True))
+
+# updater.dispatcher.add_handler(CommandHandler(command = 'start', callback = help))
+# updater.dispatcher.add_handler(CommandHandler(command = 'help', callback = help))
 
 updater.start_polling()
 updater.idle()
