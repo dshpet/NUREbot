@@ -6,7 +6,7 @@ from telegram import *
 import chatterbot
 import logging
 import re
-import json
+import ujson
 import urllib
 import datetime
 
@@ -56,7 +56,7 @@ def get_schedule(group: str, date: str = None) -> str:
   # https://docs.google.com/document/d/1BPZkBa5Y_gcGj25Q3eVm7Ftxh0_NG4a1DYhKR-jjfNQ/edit
   cist_api_root = "http://cist.nure.ua/ias/app/tt"
   faculties_url =  urllib.request.urlopen(cist_api_root + "/get_faculties").read()
-  faculties = json.loads(faculties_url.decode('UTF-8'))
+  faculties = ujson.loads(faculties_url.decode('UTF-8'))
   
   # find all groups to search schedule by a short groupname
   all_groups = []
@@ -64,7 +64,7 @@ def get_schedule(group: str, date: str = None) -> str:
     faculty_id = f_entry['faculty_id']
     groups_url = cist_api_root + "/get_groups?faculty_id=" + str(faculty_id)
     groups_json = urllib.request.urlopen(groups_url).read().decode('UTF-8')
-    groups = json.loads(groups_json)
+    groups = ujson.loads(groups_json)
     all_groups = all_groups + groups['groups']
   
   assert(all_groups != [])
@@ -81,7 +81,7 @@ def get_schedule(group: str, date: str = None) -> str:
   
   group_url = cist_api_root + "/get_schedule?group_id=" + str(group_id)
   group_json = urllib.request.urlopen(group_url).read().decode('UTF-8')
-  group_sched = json.loads(group_json)
+  group_sched = ujson.loads(group_json)
 
   try:
     schedule_date = datetime.datetime.strptime(date, "%d.%m.%Y") if date != None else datetime.datetime.today()
