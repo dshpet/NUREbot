@@ -10,14 +10,13 @@ import ujson
 import urllib
 import datetime
 
-MONGO_URI_STRING = None
+# Config
+MONGO_URI_STRING      = None
 TELEGRAM_ACCESS_TOKEN = None
+IS_LEARNING_ENABLED   = False # todo move learning to separate instance
 
+# "member" variable
 chat_bot = None
-is_learning_enabled = False # todo move learning to separate instance
-
-#import profile
-#profile.run('main()')
 
 def process_text(text: str) -> str:
   """
@@ -244,6 +243,7 @@ def help(bot, update):
 #
 
 def init_bot():
+  global chat_bot
   chat_bot = chatterbot.ChatBot("NUREbot", 
         storage_adapter = "chatterbot.storage.MongoDatabaseAdapter",
         database = "nure-bot",
@@ -255,9 +255,9 @@ def init_bot():
               'default_response': 'Я не понимаю, надо перефразировать.'
           },
           {
-              'import_path': 'chatterbot.logic.BestMatch',
-              'statement_comparison_function': 'chatterbot.comparisons.synset_distance', # http://chatterbot.readthedocs.io/en/stable/conversations.html#statement-comparison
-              'response_selection_method': 'chatterbot.response_selection.get_random_response' # http://chatterbot.readthedocs.io/en/stable/logic/response_selection.html#response-selection
+              'import_path': 'chatterbot.logic.BestMatch'
+              #'statement_comparison_function': 'chatterbot.comparisons.synset_distance', # http://chatterbot.readthedocs.io/en/stable/conversations.html#statement-comparison
+              #'response_selection_method': 'chatterbot.response_selection.get_random_response' # http://chatterbot.readthedocs.io/en/stable/logic/response_selection.html#response-selection
           },
           {
               'import_path': 'chatterbot.logic.MathematicalEvaluation'
@@ -268,7 +268,7 @@ def init_bot():
         ]
   )
   
-  if is_learning_enabled:
+  if IS_LEARNING_ENABLED:
     chat_bot.set_trainer(chatterbot.trainers.ChatterBotCorpusTrainer)
     chat_bot.train("chatterbot.corpus.english")
     chat_bot.train("chatterbot.corpus.russian")
