@@ -10,18 +10,14 @@ import ujson
 import urllib
 import datetime
 
-from Crypto.Cipher import AES
-# store encrypted keys to avoid simple github search for tokens
-crypter = AES.new('76B305DACD6BE18BBF07F1DFB0C57E65', AES.MODE_ECB)
-TELEGRAM_ACCESS_TOKEN_ENCRYPTED = b'\x1ed4\x85\xfcf\x03\xfc=\xd6\xcc\xdb\x06h\xe6\xed\x98=+4d\x9a\xb7\x87\xd2\xcb\xc4\xe7\xb4\xe6^\x98)\x0b1\xce\xb4\x9ai\x96r*\x10\xfe\xafe\x96\x1d'
-MONGO_URI_STRING_ENCRYPTED = b'\xcb\x8d\x90\xb9\x1c\x81\x82\x18\xd5\xfaf@\xea"ePv\x07\xed\xc2\xc9\xcd7\xf8\x8b\x02\x9a\xed\xce\xc9\xc1C\x1fA\x19\x1d\xe6Q9\t9\xec\xb7\x17]}\xca^\x18lzC\xa3\xd0\xee\x1f\xe8o5#\xe9\xea\xaaa'
-TELEGRAM_ACCESS_TOKEN = str(crypter.decrypt(TELEGRAM_ACCESS_TOKEN_ENCRYPTED).strip())[2:-1] # crop unnecessary braces and stuff 
-MONGO_URI_STRING = str(crypter.decrypt(MONGO_URI_STRING_ENCRYPTED).strip())[2:-1] # crop unnecessary braces and stuff 
-
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+MONGO_URI_STRING = None
+TELEGRAM_ACCESS_TOKEN = None
 
 chat_bot = None
 is_learning_enabled = False # todo move learning to separate instance
+
+#import profile
+#profile.run('main()')
 
 def process_text(text: str) -> str:
   """
@@ -247,54 +243,78 @@ def help(bot, update):
 # Create and init bot
 #
 
-chat_bot = chatterbot.ChatBot("NUREbot", 
-      storage_adapter = "chatterbot.storage.MongoDatabaseAdapter",
-      database = "nure-bot",
-      database_uri = MONGO_URI_STRING,
-      logic_adapters = [
-        {
-            'import_path': 'chatterbot.logic.LowConfidenceAdapter',
-            'threshold': 0.45,
-            'default_response': 'Я не понимаю, надо перефразировать.'
-        },
-        {
-            'import_path': 'chatterbot.logic.BestMatch',
-            'statement_comparison_function': 'chatterbot.comparisons.synset_distance', # http://chatterbot.readthedocs.io/en/stable/conversations.html#statement-comparison
-            'response_selection_method': 'chatterbot.response_selection.get_random_response' # http://chatterbot.readthedocs.io/en/stable/logic/response_selection.html#response-selection
-        },
-        {
-            'import_path': 'chatterbot.logic.MathematicalEvaluation'
-        },
-        {
-            'import_path': 'chatterbot.logic.TimeLogicAdapter'
-        }
-      ]
-)
-
-if is_learning_enabled:
-  chat_bot.set_trainer(chatterbot.trainers.ChatterBotCorpusTrainer)
-  chat_bot.train("chatterbot.corpus.english")
-  chat_bot.train("chatterbot.corpus.russian")
-  chat_bot.train("chatterbot.corpus.chinese")
-  chat_bot.train("chatterbot.corpus.french")
-  chat_bot.train("chatterbot.corpus.german")
-  chat_bot.train("chatterbot.corpus.hindi")
-  chat_bot.train("chatterbot.corpus.indonesia")
-  chat_bot.train("chatterbot.corpus.italian")
-  chat_bot.train("chatterbot.corpus.marathi")
-  chat_bot.train("chatterbot.corpus.portuguese")
-  chat_bot.train("chatterbot.corpus.spanish")
-  chat_bot.train("chatterbot.corpus.telugu")
+def init_bot():
+  chat_bot = chatterbot.ChatBot("NUREbot", 
+        storage_adapter = "chatterbot.storage.MongoDatabaseAdapter",
+        database = "nure-bot",
+        database_uri = MONGO_URI_STRING,
+        logic_adapters = [
+          {
+              'import_path': 'chatterbot.logic.LowConfidenceAdapter',
+              'threshold': 0.45,
+              'default_response': 'Я не понимаю, надо перефразировать.'
+          },
+          {
+              'import_path': 'chatterbot.logic.BestMatch',
+              'statement_comparison_function': 'chatterbot.comparisons.synset_distance', # http://chatterbot.readthedocs.io/en/stable/conversations.html#statement-comparison
+              'response_selection_method': 'chatterbot.response_selection.get_random_response' # http://chatterbot.readthedocs.io/en/stable/logic/response_selection.html#response-selection
+          },
+          {
+              'import_path': 'chatterbot.logic.MathematicalEvaluation'
+          },
+          {
+              'import_path': 'chatterbot.logic.TimeLogicAdapter'
+          }
+        ]
+  )
   
-  chat_bot.train("corpus.nure")
+  if is_learning_enabled:
+    chat_bot.set_trainer(chatterbot.trainers.ChatterBotCorpusTrainer)
+    chat_bot.train("chatterbot.corpus.english")
+    chat_bot.train("chatterbot.corpus.russian")
+    chat_bot.train("chatterbot.corpus.chinese")
+    chat_bot.train("chatterbot.corpus.french")
+    chat_bot.train("chatterbot.corpus.german")
+    chat_bot.train("chatterbot.corpus.hindi")
+    chat_bot.train("chatterbot.corpus.indonesia")
+    chat_bot.train("chatterbot.corpus.italian")
+    chat_bot.train("chatterbot.corpus.marathi")
+    chat_bot.train("chatterbot.corpus.portuguese")
+    chat_bot.train("chatterbot.corpus.spanish")
+    chat_bot.train("chatterbot.corpus.telugu")
+    
+    chat_bot.train("corpus.nure")
 
-updater = Updater(TELEGRAM_ACCESS_TOKEN)
+def start_telegram():
+  updater = Updater(TELEGRAM_ACCESS_TOKEN)
+  
+  updater.dispatcher.add_handler(MessageHandler(Filters.text, message_handler))
+  updater.dispatcher.add_handler(CommandHandler(command = 'aud',      callback = auditory, pass_args = True))
+  updater.dispatcher.add_handler(CommandHandler(command = 'schedule', callback = schedule, pass_args = True))
+  updater.dispatcher.add_handler(CommandHandler(command = 'start',    callback = help,     pass_args = False))
+  updater.dispatcher.add_handler(CommandHandler(command = 'help',     callback = help,     pass_args = False))
+  
+  updater.start_polling()
+  updater.idle()
 
-updater.dispatcher.add_handler(MessageHandler(Filters.text, message_handler))
-updater.dispatcher.add_handler(CommandHandler(command = 'aud',      callback = auditory, pass_args = True))
-updater.dispatcher.add_handler(CommandHandler(command = 'schedule', callback = schedule, pass_args = True))
-updater.dispatcher.add_handler(CommandHandler(command = 'start',    callback = help,     pass_args = False))
-updater.dispatcher.add_handler(CommandHandler(command = 'help',     callback = help,     pass_args = False))
+def main():
+  logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-updater.start_polling()
-updater.idle()
+  from Crypto.Cipher import AES
+  # store encrypted keys to avoid simple github search for tokens
+  crypter = AES.new('76B305DACD6BE18BBF07F1DFB0C57E65', AES.MODE_ECB)
+  TELEGRAM_ACCESS_TOKEN_ENCRYPTED = b'\x1ed4\x85\xfcf\x03\xfc=\xd6\xcc\xdb\x06h\xe6\xed\x98=+4d\x9a\xb7\x87\xd2\xcb\xc4\xe7\xb4\xe6^\x98)\x0b1\xce\xb4\x9ai\x96r*\x10\xfe\xafe\x96\x1d'
+  MONGO_URI_STRING_ENCRYPTED = b'\xcb\x8d\x90\xb9\x1c\x81\x82\x18\xd5\xfaf@\xea"ePv\x07\xed\xc2\xc9\xcd7\xf8\x8b\x02\x9a\xed\xce\xc9\xc1C\x1fA\x19\x1d\xe6Q9\t9\xec\xb7\x17]}\xca^\x18lzC\xa3\xd0\xee\x1f\xe8o5#\xe9\xea\xaaa'
+  
+  global TELEGRAM_ACCESS_TOKEN
+  global MONGO_URI_STRING 
+
+  TELEGRAM_ACCESS_TOKEN = str(crypter.decrypt(TELEGRAM_ACCESS_TOKEN_ENCRYPTED).strip())[2:-1] # crop unnecessary braces and stuff 
+  MONGO_URI_STRING = str(crypter.decrypt(MONGO_URI_STRING_ENCRYPTED).strip())[2:-1] # crop unnecessary braces and stuff 
+
+  init_bot()
+  start_telegram()
+
+
+if __name__ == "__main__":
+  main()
