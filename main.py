@@ -110,9 +110,16 @@ def get_schedule(group: str, date: str = None) -> str:
       if (lesson_date == schedule_date_ddmmyear):
         today_lessons.append(l)
   
+  if not today_lessons:
+    return "Нет занятий или сервер недоступен"
+
   schedule_info = ""
   for lesson in today_lessons:
-    lesson_info = lesson['subject'] +  "\r\n" + " [" + lesson['time_start'] + " - " + lesson['time_end'] + "] " + "\r\n" + " aud: " + str(lesson['auditories'][0]['auditory_name']) + "\r\n" + "\r\n"
+    subject = lesson['subject']
+    teacher = lesson['teachers'][0]['teacher_name'] if lesson['teachers'] else "" # get first and only teacher if specified
+    time = "[" + lesson['time_start'] + " - " + lesson['time_end'] + "]"
+    auditorium = "/aud " + str(lesson['auditories'][0]['auditory_name'])
+    lesson_info = subject + "\r\n" + teacher + "\r\n" + time + "\r\n" + auditorium + "\r\n" + "\r\n"
     schedule_info += lesson_info
 
   return schedule_info
@@ -146,9 +153,9 @@ def parse_auditory_number(text):
     path_info = ""
     if (not number[len(number) - 1].isdigit()):
         if (number[len(number) - 1] == 'и'):
-          answer += "Корпус И "
+          answer += "Корпус <И> "
         elif (number[len(number) - 1] == 'з'):
-          answer += "Корпус З "
+          answer += "Корпус <З> "
           path_info += "Проще пройти через главный корпус. Главный вход, второй этаж и сразу налево, если идти по главной лестнице. Затем по крытому переходу в корпус З"
     else:
         answer += "Главный корпус "
@@ -238,21 +245,9 @@ def help(bot, update):
     reply_markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
   )
 
-# look for data
-# http://www.nltk.org/data.html
-# delete if it sucks
-# C:\Users\dshpet\AppData\Roaming\nltk_data
-import nltk
-# read
-# http://www.nltk.org/api/nltk.chat.html
-# chatbots _pairs may be useful for some text data, but input is a re pattern which is not compatible
-# with current chatterbot
-# https://www.smallsurething.com/implementing-the-famous-eliza-chatbot-in-python/
-# a = nltk.chat
-# b = a.iesha.iesha_chatbot._pairs
-# for req, res in b:
-#   c = re.compile(req)
-#   print(c.pattern, res)
+#
+# Create and init bot
+#
 
 chat_bot = chatterbot.ChatBot("NUREbot", 
       storage_adapter = "chatterbot.storage.MongoDatabaseAdapter",
@@ -260,12 +255,14 @@ chat_bot = chatterbot.ChatBot("NUREbot",
       database_uri = MONGO_URI_STRING,
       logic_adapters = [
         {
-            'import_path': 'chatterbot.logic.BestMatch'
-        },
-        {
             'import_path': 'chatterbot.logic.LowConfidenceAdapter',
             'threshold': 0.45,
             'default_response': 'Я не понимаю, надо перефразировать.'
+        },
+        {
+            'import_path': 'chatterbot.logic.BestMatch',
+            'statement_comparison_function': 'chatterbot.comparisons.synset_distance',
+            'response_selection_method': 'chatterbot.response_selection.get_random_response'
         },
         {
             'import_path': 'chatterbot.logic.MathematicalEvaluation'
