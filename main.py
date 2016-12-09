@@ -255,9 +255,9 @@ def init_bot():
               'default_response': 'Я не понимаю, надо перефразировать.'
           },
           {
-              'import_path': 'chatterbot.logic.BestMatch'
-              #'statement_comparison_function': 'chatterbot.comparisons.synset_distance', # http://chatterbot.readthedocs.io/en/stable/conversations.html#statement-comparison
-              #'response_selection_method': 'chatterbot.response_selection.get_random_response' # http://chatterbot.readthedocs.io/en/stable/logic/response_selection.html#response-selection
+              'import_path': 'chatterbot.logic.BestMatch', # http://chatterbot.readthedocs.io/en/stable/logic/index.html
+              'statement_comparison_function': 'chatterbot.comparisons.levenshtein_distance', # http://chatterbot.readthedocs.io/en/stable/conversations.html#statement-comparison
+              'response_selection_method': 'chatterbot.response_selection.get_most_frequent_response' # http://chatterbot.readthedocs.io/en/stable/logic/response_selection.html#response-selection
           },
           {
               'import_path': 'chatterbot.logic.MathematicalEvaluation'
