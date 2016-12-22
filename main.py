@@ -13,7 +13,7 @@ import datetime
 # Config
 MONGO_URI_STRING      = None
 TELEGRAM_ACCESS_TOKEN = None
-IS_LEARNING_ENABLED   = False # todo move learning to separate instance
+IS_LEARNING_ENABLED   = True # todo move learning to separate instance
 
 # "member" variable
 chat_bot = None
@@ -243,6 +243,8 @@ def help(bot, update):
 #
 
 def init_bot():
+  print("Initalizing bot...")
+
   global chat_bot
   chat_bot = chatterbot.ChatBot("NUREbot", 
         storage_adapter = "chatterbot.storage.MongoDatabaseAdapter",
@@ -269,37 +271,48 @@ def init_bot():
   )
   
   if IS_LEARNING_ENABLED:
+    print("Initial learning process started...")
     chat_bot.set_trainer(chatterbot.trainers.ChatterBotCorpusTrainer)
-    chat_bot.train("chatterbot.corpus.english")
-    chat_bot.train("chatterbot.corpus.russian")
-    chat_bot.train("chatterbot.corpus.chinese")
-    chat_bot.train("chatterbot.corpus.french")
-    chat_bot.train("chatterbot.corpus.german")
-    chat_bot.train("chatterbot.corpus.hindi")
-    chat_bot.train("chatterbot.corpus.indonesia")
-    chat_bot.train("chatterbot.corpus.italian")
-    chat_bot.train("chatterbot.corpus.marathi")
-    chat_bot.train("chatterbot.corpus.portuguese")
-    chat_bot.train("chatterbot.corpus.spanish")
-    chat_bot.train("chatterbot.corpus.telugu")
+    
+    #chat_bot.train("chatterbot.corpus.english")
+    #chat_bot.train("chatterbot.corpus.russian")
+    #chat_bot.train("chatterbot.corpus.chinese")
+    #chat_bot.train("chatterbot.corpus.french")
+    #chat_bot.train("chatterbot.corpus.german")
+    #chat_bot.train("chatterbot.corpus.hindi")
+    #chat_bot.train("chatterbot.corpus.indonesia")
+    #chat_bot.train("chatterbot.corpus.italian")
+    #chat_bot.train("chatterbot.corpus.marathi")
+    #chat_bot.train("chatterbot.corpus.portuguese")
+    #chat_bot.train("chatterbot.corpus.spanish")
+    #chat_bot.train("chatterbot.corpus.telugu")
     
     chat_bot.train("corpus.nure")
+    print("Initial learning process finished")
+
+  print("Initialization successful")
 
 def start_telegram():
+  print("Connecting to Telegram server...")
   updater = Updater(TELEGRAM_ACCESS_TOKEN)
+  print("Connecting to" + "@elNUREbot" + " successful...")
   
+  print("Launching event handlers...")
   updater.dispatcher.add_handler(MessageHandler(Filters.text, message_handler))
   updater.dispatcher.add_handler(CommandHandler(command = 'aud',      callback = auditory, pass_args = True))
   updater.dispatcher.add_handler(CommandHandler(command = 'schedule', callback = schedule, pass_args = True))
   updater.dispatcher.add_handler(CommandHandler(command = 'start',    callback = help,     pass_args = False))
   updater.dispatcher.add_handler(CommandHandler(command = 'help',     callback = help,     pass_args = False))
+  print("Launch successful")
   
+  print("Start polling...")
   updater.start_polling()
   updater.idle()
 
 def main():
   logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
+  print("Decrypting access keys...")
   from Crypto.Cipher import AES
   # store encrypted keys to avoid simple github search for tokens
   crypter = AES.new('76B305DACD6BE18BBF07F1DFB0C57E65', AES.MODE_ECB)
@@ -311,6 +324,7 @@ def main():
 
   TELEGRAM_ACCESS_TOKEN = str(crypter.decrypt(TELEGRAM_ACCESS_TOKEN_ENCRYPTED).strip())[2:-1] # crop unnecessary braces and stuff 
   MONGO_URI_STRING = str(crypter.decrypt(MONGO_URI_STRING_ENCRYPTED).strip())[2:-1] # crop unnecessary braces and stuff 
+  print("Decryption successful")
 
   init_bot()
   start_telegram()
